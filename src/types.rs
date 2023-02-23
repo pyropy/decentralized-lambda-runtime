@@ -1,6 +1,7 @@
 use http::Response;
-use hyper::Body;
 use serde::{Deserialize, Serialize};
+
+pub type Body = Vec<u8>;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Context {}
@@ -28,13 +29,12 @@ pub trait IntoResponse {
     fn into_rsp(self) -> Result<Response<Body>, Error>;
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Diagnostics<'a> {
-    pub error_type: &'a str,
-    pub error_msg: &'a str,
+pub trait SaveResult {
+    fn save_result(self) -> Result<(), Error>;
 }
 
+#[derive(Debug, Eq, PartialEq, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct EventSuccess<T> {
     pub body: T,
 }
@@ -45,13 +45,21 @@ where
 {
     fn into_rsp(self) -> Result<Response<Body>, Error> {
         let body = serde_json::to_vec(&self.body)?;
-        let body = Body::from(body);
         let resp = Response::builder().status(200).body(body)?;
 
         Ok(resp)
     }
 }
 
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Diagnostics<'a> {
+    pub error_type: &'a str,
+    pub error_msg: &'a str,
+}
+
+#[derive(Debug, Eq, PartialEq, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct EventError<'a> {
     pub diagnostic: Diagnostics<'a>,
 }
@@ -70,7 +78,6 @@ impl<'a> EventError<'a> {
 impl<'a> IntoResponse for EventError<'a> {
     fn into_rsp(self) -> Result<Response<Body>, Error> {
         let body = serde_json::to_vec(&self.diagnostic)?;
-        let body = Body::from(body);
         let resp = Response::builder().status(500).body(body)?;
 
         Ok(resp)

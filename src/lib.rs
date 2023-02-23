@@ -1,13 +1,12 @@
 mod types;
 
 use http::Response;
-use hyper::Body;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Debug, Display},
     fs,
 };
-pub use types::{Context, Error, EventError, EventSuccess, IntoResponse, LambdaEvent};
+pub use types::{Body, Context, Error, EventError, EventSuccess, IntoResponse, LambdaEvent};
 
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct Config {
@@ -18,8 +17,8 @@ pub struct Config {
 impl Config {
     pub fn default() -> Self {
         Config {
-            input_path: String::from("/input/inputs.json"),
-            output_path: String::from("/output/outputs.json"),
+            input_path: String::from("/inputs/input.json"),
+            output_path: String::from("/outputs/output.json"),
         }
     }
 }
@@ -56,6 +55,7 @@ where
         Err(err) => {
             let error_type = type_name_of_val(&err);
             let msg = "Panic";
+            // TODO: Replace this stuff
             // let msg = if let Some(msg) = err.downcast_ref::<&str>() {
             //     format!("Lambda panicked: {msg}")
             // } else {
@@ -65,10 +65,17 @@ where
         }
     };
 
-    // TODO: Persist response
-    println!("{:?}", response);
+    if let Ok(response) = response {
+        persist(response, config);
+    }
 
     return Ok(());
+}
+
+fn persist(res: Response<Body>, config: &Config) -> Result<(), std::io::Error> {
+    let body = res.body();
+    std::fs::write(config.output_path.as_str(), body)?;
+    Ok(())
 }
 
 pub fn run<F, A, T, E>(handler: F) -> Result<(), Error>

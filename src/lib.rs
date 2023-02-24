@@ -1,4 +1,5 @@
 mod types;
+mod response;
 
 use http::Response;
 use serde::{Deserialize, Serialize};
@@ -6,7 +7,8 @@ use std::{
     fmt::{Debug, Display},
     fs,
 };
-pub use types::{Body, Context, Error, EventError, EventSuccess, IntoResponse, LambdaEvent};
+pub use response::{EventError, EventSuccess, IntoResponse, Body};
+pub use types::{Context, Error, LambdaEvent};
 
 #[derive(Debug, Default, Clone, Eq, PartialEq)]
 pub struct Config {
